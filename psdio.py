@@ -62,7 +62,7 @@ def get_masks_from_layer(psd, alpha_th=1):
        second layer:     contaminants 
        remaining layers: cells (one cell per image)"""
     
-    def get_binary_mask(images, alpha_th=100):
+    def get_binary_mask(images, alpha_th):
         mask = np.zeros_like(images[:,:,:,0])
         mask[images[:,:,:,3]>alpha_th] = 1
         return mask

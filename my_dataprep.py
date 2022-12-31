@@ -21,10 +21,11 @@ from PIL import Image
 from joblib import Parallel, delayed
 import multiprocessing
 
-import mysegmentation as mCPU
+from mysegmentation import mCPU
 import dataprep
 import psdio
 
+cpus = multiprocessing.cpu_count()
 
 def process_image(image, masks, out_path, lims):
 
@@ -44,15 +45,17 @@ def process_image(image, masks, out_path, lims):
 
         for n, i in enumerate(lims):
             ic = image_crops[ind]
-            ic = image_crop_resize(ic, c=i, size=size)
+            ic = dataprep.image_crop_resize(ic, c=i, size=size)
             ic = ic.astype("uint8")
 
             im = mask_crops[ind][1:]
             co = mask_crops[ind][0]
+            co = dataprep.image_crop_resize(co, c=i, size=size)*2.55
             im = dataprep.mask_crop_resize(im, c=i, size=size)
-            im = dataprep.outline_mask(im, lw*size/(size-i))
-            im[co==1] = 2.55
-            im = (im*100).astype(uint8)
+            im = dataprep.outline_mask(im, lw)
+            co[im==1] = 1
+            co[im==2] = 2
+            im = (co*100).astype("uint8")
 
             io.imsave(out_path+str(10000000+ind*100+n)[1:]+"raw.png", ic)
             io.imsave(out_path+str(10000000+ind*100+n)[1:]+"mask.png", im)
@@ -73,8 +76,8 @@ def process_image(image, masks, out_path, lims):
                 io.imsave(out_path+str(10000000+ind*100+n+10*j+60)
                           [1:]+"mask.png", np.rot90(im[::-1].T, j))
 
-    _ = mCPU(process_all, range(len(dimages)), 20)
-
+    #_ = mCPU(process_all, range(len(image_crops)), cpus)
+    _ = [process_all(i) for i in tqdm(range(len(image_crops)))]
 
 if __name__ == '__main__':
     
