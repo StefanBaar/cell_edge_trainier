@@ -16,7 +16,7 @@ def get_args():
     parser.add_argument("--devices"     ,default=0         ,type=int, nargs='?', const=1)
     parser.add_argument("--batch_size"  ,default=35        ,type=int, nargs='?', const=1)
     parser.add_argument("--in_channels" ,default=1         ,type=int, nargs='?', const=1)
-    parser.add_argument("--out_channels",default=3         ,type=int, nargs='?', const=1)
+    parser.add_argument("--out_channels",default=4         ,type=int, nargs='?', const=1)
     parser.add_argument("--max_epochs"  ,default=1         ,type=int, nargs='?', const=1)
     return parser
     
@@ -38,12 +38,16 @@ def multi_class_train(main_path,arch,encoder_name,batch_size,in_channels,out_cha
     model = CellTrainer(arch, encoder_name, in_channels, out_channels)
 
     tb_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir+name+"/",flush_secs=10)
-    trainer   = pl.Trainer(accelerator="gpu", devices=devices,max_epochs=max_epochs,
-                           logger=tb_logger,)
+    if torch.cuda.is_available():
+        trainer   = pl.Trainer(accelerator="gpu", devices=devices,max_epochs=max_epochs,
+                            logger=tb_logger,)
+    else:
+        trainer   = pl.Trainer(accelerator="cpu", max_epochs=max_epochs,
+                            logger=tb_logger,)
 
     trainer.fit(model, train_dataloaders=train_data,val_dataloaders=valid_data)
     
-    torch.save(model.state_dict(),model_dic+arch+"_"+encoder_name+"_"+str(in_channels)+"_"+str(out_channels)+"_"+str(max_epochs)+"_"+str(batch_size))
+    torch.save(model,model_dic+arch+"_"+encoder_name+"_"+str(in_channels)+"_"+str(out_channels)+"_"+str(max_epochs)+"_"+str(batch_size))
 
 if __name__ == '__main__':
     ssl._create_default_https_context = ssl._create_unverified_context
