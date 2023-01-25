@@ -8,7 +8,6 @@ from dataprep import load_train_val, MyDataset
 
 import ssl
 
-
 def get_args():
     parser = argparse.ArgumentParser(description='Produces training arguments:')
     parser.add_argument("--arch"        ,default="FPN"     ,type=str, nargs='?', const=1)
@@ -16,26 +15,28 @@ def get_args():
     parser.add_argument("--devices"     ,default=0         ,type=int, nargs='?', const=1)
     parser.add_argument("--batch_size"  ,default=35        ,type=int, nargs='?', const=1)
     parser.add_argument("--in_channels" ,default=1         ,type=int, nargs='?', const=1)
-    parser.add_argument("--out_channels",default=4         ,type=int, nargs='?', const=1)
+    parser.add_argument("--out_channels",default=5         ,type=int, nargs='?', const=1)
     parser.add_argument("--max_epochs"  ,default=1         ,type=int, nargs='?', const=1)
+    parser.add_argument("--encoder_depth",default=5         ,type=int, nargs='?', const=1)
+    parser.add_argument("--weights"      ,default="imagenet",type=str, nargs='?', const=1)
     return parser
-    
 
-def multi_class_train(main_path,arch,encoder_name,batch_size,in_channels,out_channels,devices,max_epochs):
-    
+
+def multi_class_train(main_path,arch,encoder_name,batch_size,in_channels,out_channels,devices,max_epochs,weigths):
+
     model_dic = main_path+"models/"
     log_dir   = main_path+"lightning_logs/"
-    name      = arch+"_"+encoder_name+"_"+str(in_channels)+"_"+str(out_channels)+"_"+str(max_epochs)+"_"+str(batch_size)
-    
-    train_path = main_path+"training/"
-    valid_path = main_path+"validation/"
+    name      = arch+"_"+encoder_name+"_"+str(in_channels)+"_"+str(out_channels)+"_"+str(max_epochs)+"_"+str(batch_size)+"_"+weigths
+
+    train_path = main_path+"pngs/train/"
+    valid_path = main_path+"pngs/valid/"
 
     TRAIN_DATA = MyDataset(train_path)
     VALID_DATA = MyDataset(valid_path)
 
     train_data, valid_data = load_train_val(TRAIN_DATA,VALID_DATA,batch_size)
 
-    model = CellTrainer(arch, encoder_name, in_channels, out_channels)
+    model = CellTrainer(arch, encoder_name, in_channels, out_channels,weigths)
 
     tb_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir+name+"/",flush_secs=10)
     if torch.cuda.is_available():
@@ -46,14 +47,13 @@ def multi_class_train(main_path,arch,encoder_name,batch_size,in_channels,out_cha
                             logger=tb_logger,)
 
     trainer.fit(model, train_dataloaders=train_data,val_dataloaders=valid_data)
-    
+
     torch.save(model,model_dic+arch+"_"+encoder_name+"_"+str(in_channels)+"_"+str(out_channels)+"_"+str(max_epochs)+"_"+str(batch_size))
 
 if __name__ == '__main__':
     ssl._create_default_https_context = ssl._create_unverified_context
     main_path    = "./data/"
 
-    
     #arch         = "FPN"
     #encoder_name = "resnet18"
     #devices      = [0]
@@ -64,14 +64,19 @@ if __name__ == '__main__':
     args         =  get_args().parse_args()
     arch         =  args.arch
     encoder_name =  args.encoder_name
-    devices      = [args.devices]
+    devices      =  args.devices
     batch_size   =  args.batch_size
     in_channels  =  args.in_channels
     out_channels =  args.out_channels
     max_epochs   =  args.max_epochs
-    
+    encoder_depth=  args.encoder_depth
+    weights      =  args.weights
     print(args)
 
+    if len(str(devices))>1:
+        devices = [int(i) for i in str(devices)]
+    else:
+        devices = [devices]
 
     multi_class_train(main_path,
                       arch,
@@ -80,5 +85,5 @@ if __name__ == '__main__':
                       in_channels,
                       out_channels,
                       devices,
-                      max_epochs)
-    
+                      max_epochs,
+                      weights)

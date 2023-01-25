@@ -21,14 +21,17 @@ from PIL import Image
 from joblib import Parallel, delayed
 import multiprocessing
 
+
 import mysegmentation as myseg
 
 
 class MyDataset(Dataset):
     def __init__(self, path, pytorch=True):
         super().__init__()
+
         self.raw_files  = sorted(glob(path+"*raw.png"))
         self.anno_files = sorted(glob(path+"*mask.png"))
+
         self.pytorch=True
         #self.colors      = colors
 
@@ -51,7 +54,6 @@ class MyDataset(Dataset):
     def load_mask(self, idx):
         """load mask from path"""
         mask = io.imread(self.anno_files[idx])/100
-        mask = np.round(mask,0)
         mask = self.check_pad(mask)
         return torch.unsqueeze(torch.tensor(mask, dtype=torch.int64),0)
 
@@ -363,4 +365,4 @@ if __name__ == '__main__':
                 io.imsave(out_path+str(10000000+ind*100+n+10*j+60)[1:]+"raw.png" ,np.rot90(ic[::-1].T,j))
                 io.imsave(out_path+str(10000000+ind*100+n+10*j+60)[1:]+"mask.png" ,np.rot90(im[::-1].T,j))
                 
-    _ = mCPU(process_all,range(len(image_crops)),40) 
+        _ = mCPU(process_all,range(len(image_crops)),40) 

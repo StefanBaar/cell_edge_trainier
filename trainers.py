@@ -8,10 +8,10 @@ import segmentation_models_pytorch as smp
 
 class CellTrainer(pl.LightningModule):
 
-    def __init__(self, arch, encoder_name, in_channels, out_classes, **kwargs):
+    def __init__(self, arch, encoder_name, in_channels, out_classes, weights,**kwargs):
         super().__init__()
         self.model = smp.create_model(
-            arch, encoder_name=encoder_name, in_channels=in_channels, classes=out_classes, **kwargs
+            arch, encoder_name=encoder_name, in_channels=in_channels, classes=out_classes,encoder_weights=weights, **kwargs
         )
 
         params = smp.encoders.get_preprocessing_params(encoder_name,pretrained='imagenet')
@@ -21,7 +21,7 @@ class CellTrainer(pl.LightningModule):
 
         self.loss_fn = smp.losses.DiceLoss(smp.losses.MULTICLASS_MODE,
                                            from_logits=True)
-        
+
     def forward(self, image):
 
         mask = self.model(image)
